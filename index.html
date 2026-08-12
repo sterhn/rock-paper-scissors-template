@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Камень ✊ Ножницы ✌️ Бумага ✋ — Teachable Machine</title>
 
-<!-- Подключаем TensorFlow.js и библиотеку Teachable Machine (из CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.20.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
@@ -18,14 +18,13 @@
     color: #fff;
     padding: 20px;
   }
-  .container {
-    max-width: 1100px;
-    margin: 0 auto;
-  }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
   h1 {
     text-align: center;
     font-size: 2rem;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
     background: linear-gradient(45deg, #f39c12, #e74c3c, #9b59b6);
     -webkit-background-clip: text;
     background-clip: text;
@@ -34,17 +33,64 @@
   .subtitle {
     text-align: center;
     color: #95a5a6;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
     font-size: 0.95rem;
   }
+
+  /* -------- Блок настройки модели -------- */
+  .setup-panel {
+    background: rgba(52, 152, 219, 0.12);
+    border: 1px solid rgba(52, 152, 219, 0.4);
+    border-radius: 14px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+  }
+  .setup-panel h2 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    color: #74b9ff;
+  }
+  .model-input-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .model-input-row input {
+    flex: 1;
+    min-width: 280px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.35);
+    color: #fff;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .model-input-row input:focus { border-color: #3498db; }
+  .model-input-row input::placeholder { color: #7f8c8d; }
+  .hint {
+    margin-top: 10px;
+    font-size: 0.82rem;
+    color: #7f8c8d;
+    line-height: 1.5;
+  }
+  .hint a { color: #74b9ff; }
+  .hint code {
+    background: rgba(0,0,0,0.4);
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: monospace;
+  }
+
+  /* -------- Сетка -------- */
   .game-layout {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
   }
-  @media (max-width: 800px) {
-    .game-layout { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 800px) { .game-layout { grid-template-columns: 1fr; } }
+
   .panel {
     background: rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
@@ -52,13 +98,10 @@
     border-radius: 16px;
     padding: 20px;
   }
-  .panel h2 {
-    font-size: 1.1rem;
-    margin-bottom: 12px;
-    color: #ecf0f1;
-  }
+  .panel h2 { font-size: 1.05rem; margin-bottom: 12px; color: #ecf0f1; }
+
+  /* -------- Вебкамера -------- */
   #webcam-container {
-    position: relative;
     width: 100%;
     border-radius: 12px;
     overflow: hidden;
@@ -68,22 +111,11 @@
     align-items: center;
     justify-content: center;
   }
-  #webcam-container video, #webcam-container canvas {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .placeholder {
-    color: #7f8c8d;
-    text-align: center;
-    padding: 20px;
-  }
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
-  }
+  #webcam-container canvas { width: 100%; height: 100%; object-fit: cover; }
+  .placeholder { color: #7f8c8d; text-align: center; padding: 20px; line-height: 1.8; }
+
+  /* -------- Кнопки -------- */
+  .controls { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
   button {
     padding: 12px 20px;
     border: none;
@@ -95,94 +127,68 @@
     color: #fff;
   }
   button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
   .btn-primary { background: linear-gradient(135deg, #3498db, #2980b9); }
   .btn-success { background: linear-gradient(135deg, #27ae60, #16a085); }
   .btn-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
 
+  /* -------- Статус и предсказания -------- */
   .status {
     margin-top: 12px;
     padding: 10px;
     background: rgba(0,0,0,0.3);
     border-radius: 8px;
     font-family: monospace;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: #bdc3c7;
-    min-height: 24px;
+    min-height: 22px;
   }
-  .prediction-list {
-    list-style: none;
-    margin-top: 10px;
-  }
+  .prediction-list { list-style: none; margin-top: 10px; }
   .prediction-list li {
-    display: flex;
-    justify-content: space-between;
     padding: 6px 10px;
-    margin-bottom: 4px;
+    margin-bottom: 5px;
     background: rgba(255,255,255,0.05);
     border-radius: 6px;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
+  .pred-row { display: flex; justify-content: space-between; }
   .bar {
-    height: 6px;
+    height: 5px;
     background: linear-gradient(90deg, #3498db, #2ecc71);
     border-radius: 3px;
-    margin-top: 4px;
     transition: width 0.2s;
   }
 
-  /* Игровая зона */
+  /* -------- Арена -------- */
   .arena {
     text-align: center;
-    padding: 30px 20px;
+    padding: 28px 16px;
     background: rgba(0,0,0,0.25);
     border-radius: 12px;
     margin-bottom: 15px;
   }
-  .vs {
-    display: flex;
-    align-items: center;
-    justify-content: space-around;
-    gap: 10px;
-  }
-  .side {
-    flex: 1;
-  }
+  .vs { display: flex; align-items: center; justify-content: space-around; gap: 8px; }
+  .side { flex: 1; }
   .emoji {
     font-size: 4.5rem;
     line-height: 1;
     margin-bottom: 8px;
+    display: block;
     transition: transform 0.3s;
   }
-  .emoji.big { transform: scale(1.15); }
-  .label {
-    font-size: 0.85rem;
-    color: #95a5a6;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .choice-name {
-    font-size: 1.2rem;
-    font-weight: 600;
-    color: #ecf0f1;
-    margin: 6px 0;
-    min-height: 1.5em;
-  }
-  .vs-text {
-    font-size: 1.8rem;
-    font-weight: bold;
-    color: #e74c3c;
-  }
-  .result {
-    margin-top: 18px;
-    font-size: 1.6rem;
-    font-weight: bold;
-    min-height: 1.6em;
-  }
+  .emoji.pop { transform: scale(1.2); }
+  .label { font-size: 0.8rem; color: #95a5a6; text-transform: uppercase; letter-spacing: 1px; }
+  .choice-name { font-size: 1.1rem; font-weight: 600; color: #ecf0f1; margin: 6px 0; min-height: 1.4em; }
+  .vs-text { font-size: 1.8rem; font-weight: bold; color: #e74c3c; }
+  .result { margin-top: 18px; font-size: 1.55rem; font-weight: bold; min-height: 1.6em; }
   .result.win  { color: #2ecc71; }
   .result.lose { color: #e74c3c; }
   .result.draw { color: #f39c12; }
 
+  /* -------- Счёт -------- */
   .score {
     display: flex;
     justify-content: space-around;
@@ -190,88 +196,98 @@
     border-radius: 10px;
     padding: 12px;
   }
-  .score-item {
-    text-align: center;
-  }
-  .score-item .num {
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  .score-item .name {
-    font-size: 0.85rem;
-    color: #95a5a6;
-  }
+  .score-item { text-align: center; }
+  .score-item .num { font-size: 2rem; font-weight: bold; }
+  .score-item .name { font-size: 0.82rem; color: #95a5a6; }
   .score-item.you .num   { color: #3498db; }
   .score-item.comp .num  { color: #e74c3c; }
   .score-item.draws .num { color: #f39c12; }
 
-  .info {
-    background: rgba(243, 156, 18, 0.15);
-    border-left: 3px solid #f39c12;
-    padding: 12px 15px;
-    border-radius: 6px;
-    margin-top: 15px;
+  /* -------- Порог уверенности -------- */
+  .threshold-row {
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     font-size: 0.85rem;
-    line-height: 1.5;
-    color: #f5d28a;
+    color: #95a5a6;
   }
-  .info code {
-    background: rgba(0,0,0,0.3);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: monospace;
-  }
+  .threshold-row input[type=range] { flex: 1; }
+  .threshold-row span { min-width: 35px; color: #ecf0f1; font-weight: 600; }
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>✊ ✌️ ✋ Камень-Ножницы-Бумага</h1>
+
+  <h1>✊ ✌️ ✋ Камень · Ножницы · Бумага</h1>
   <p class="subtitle">Распознавание жестов через Teachable Machine + TensorFlow.js</p>
 
+  <!-- ======= БЛОК НАСТРОЙКИ МОДЕЛИ ======= -->
+  <div class="setup-panel">
+    <h2>🔗 Ссылка на вашу модель Teachable Machine</h2>
+    <div class="model-input-row">
+      <input type="url" id="modelUrlInput"
+        placeholder="https://teachablemachine.withgoogle.com/models/ВАША_МОДЕЛЬ/"
+        value="">
+    </div>
+    <p class="hint">
+      1. Обучите модель на
+      <a href="https://teachablemachine.withgoogle.com/train/image" target="_blank">teachablemachine.withgoogle.com</a>
+      с тремя классами (например: <code>rock</code>, <code>scissors</code>, <code>paper</code>).<br>
+      2. Нажмите <strong>«Export Model» → «Upload my model»</strong> — получите ссылку вида
+      <code>https://teachablemachine.withgoogle.com/models/XXXX/</code>.<br>
+      3. Вставьте эту ссылку выше и нажмите <strong>«Запустить камеру»</strong>.
+    </p>
+  </div>
+
+  <!-- ======= ОСНОВНАЯ СЕТКА ======= -->
   <div class="game-layout">
 
-    <!-- Левая панель: вебкамера и распознавание -->
+    <!-- Левая панель -->
     <div class="panel">
-      <h2>📷 Вебкамера (ввод игрока)</h2>
+      <h2>📷 Вебкамера</h2>
       <div id="webcam-container">
         <div class="placeholder">
-          👆<br>Нажмите «Запустить камеру», чтобы начать
+          👆<br>Введите ссылку на модель<br>и нажмите «Запустить камеру»
         </div>
       </div>
 
       <div class="controls">
         <button id="startBtn" class="btn-primary">▶️ Запустить камеру</button>
-        <button id="playBtn"  class="btn-success" disabled>🎮 Сыграть раунд</button>
+        <button id="playBtn" class="btn-success" disabled>🎮 Сыграть раунд</button>
       </div>
 
       <div class="status" id="status">⏳ Готов к запуску…</div>
 
-      <h2 style="margin-top: 20px;">🧠 Предсказания модели</h2>
-      <ul class="prediction-list" id="predictionList"></ul>
-
-      <div class="info">
-        💡 Чтобы всё заработало: обучите свою модель на
-        <a href="https://teachablemachine.withgoogle.com/" target="_blank" style="color:#f39c12">teachablemachine.withgoogle.com</a>
-        с тремя классами (Камень / Ножницы / Бумага) и вставьте ссылку на экспортированную модель
-        в строку <code>https://teachablemachine.withgoogle.com/models/aDTakSCEG/</code> ниже.
+      <div class="threshold-row">
+        <label for="thresholdRange">Мин. уверенность:</label>
+        <input type="range" id="thresholdRange" min="40" max="95" value="70">
+        <span id="thresholdLabel">70%</span>
       </div>
+
+      <h2 style="margin-top:18px;">🧠 Предсказания модели</h2>
+      <ul class="prediction-list" id="predictionList">
+        <li style="color:#7f8c8d; font-size:0.85rem; padding:8px; background:none;">
+          Здесь появятся предсказания после запуска камеры
+        </li>
+      </ul>
     </div>
 
-    <!-- Правая панель: игровое поле -->
+    <!-- Правая панель -->
     <div class="panel">
       <h2>🎯 Игровое поле</h2>
 
       <div class="arena">
         <div class="vs">
           <div class="side">
-            <div class="emoji" id="playerEmoji">❔</div>
+            <span class="emoji" id="playerEmoji">❔</span>
             <div class="label">Вы</div>
             <div class="choice-name" id="playerChoice">—</div>
           </div>
           <div class="vs-text">VS</div>
           <div class="side">
-            <div class="emoji" id="computerEmoji">❔</div>
+            <span class="emoji" id="computerEmoji">❔</span>
             <div class="label">Компьютер</div>
             <div class="choice-name" id="computerChoice">—</div>
           </div>
@@ -295,208 +311,241 @@
       </div>
     </div>
 
-  </div>
-</div>
+  </div><!-- /.game-layout -->
+</div><!-- /.container -->
 
 <script>
 /* ============================================================
-   🔧 НАСТРОЙКА: вставьте сюда URL вашей модели из Teachable Machine
+   ⚙️  НАСТРОЙКА — маппинг классов модели → игровые ходы
+   Ключ  = точное название класса в вашей модели (регистр важен!)
+   Значение = { label: отображаемое имя, emoji: смайл }
    ============================================================ */
-const MODEL_URL = "https://teachablemachine.withgoogle.com/models/aDTakSCEG/";
+const CLASS_MAP = {
+  // Примеры — отредактируйте под названия ваших классов:
+  "rock":     { label: "Камень",  emoji: "✊" },
+  "scissors": { label: "Ножницы", emoji: "✌️" },
+  "paper":    { label: "Бумага",  emoji: "✋" },
 
-/* Имена классов (должны совпадать с тем, как вы их назвали при обучении!) */
-const CLASSES = ["Камень", "Ножницы", "Бумага"];
+  // Дополнительные варианты написания (раскомментируйте нужные):
+  // "Камень":   { label: "Камень",  emoji: "✊" },
+  // "Ножницы":  { label: "Ножницы", emoji: "✌️" },
+  // "Бумага":   { label: "Бумага",  emoji: "✋" },
+  // "Stone":    { label: "Камень",  emoji: "✊" },
+  // "Scissor":  { label: "Ножницы", emoji: "✌️" },
+  // "Paper":    { label: "Бумага",  emoji: "✋" },
+};
 
-const EMOJI = {
-  "Камень":   "✊",
-  "Ножницы":  "✌️",
-  "Бумага":   "✋"
+/* Правила победы: ключ бьёт значение */
+const BEATS = {
+  "rock":     "scissors",
+  "scissors": "paper",
+  "paper":    "rock",
 };
 
 /* ============================================================ */
 
-let model = null;
-let webcam = null;
-let isRunning = false;
-let predictionInterval = null;
-
 const $ = id => document.getElementById(id);
-const startBtn = $("startBtn");
-const playBtn  = $("playBtn");
-const status   = $("status");
-const list     = $("predictionList");
+const GAME_CLASSES = Object.keys(CLASS_MAP);
 
-/* ---------- Запуск камеры и загрузка модели ---------- */
-startBtn.addEventListener("click", async () => {
+let model   = null;
+let webcam  = null;
+let loopId  = null;
+let running = false;
+
+const startBtn      = $("startBtn");
+const playBtn       = $("playBtn");
+const statusEl      = $("status");
+const listEl        = $("predictionList");
+const thresholdEl   = $("thresholdRange");
+const thresholdLbl  = $("thresholdLabel");
+const modelUrlInput = $("modelUrlInput");
+
+/* ── Ползунок порога ── */
+thresholdEl.addEventListener("input", () => {
+  thresholdLbl.textContent = thresholdEl.value + "%";
+});
+
+/* ── Кнопка Старт/Стоп ── */
+startBtn.addEventListener("click", () => {
+  if (running) { stopCamera(); return; }
+  startCamera();
+});
+
+/* ── Кнопка Раунд ── */
+playBtn.addEventListener("click", playRound);
+
+/* ── Запуск ── */
+async function startCamera() {
+  const url = modelUrlInput.value.trim().replace(/\/?$/, "/");
+
+  if (!url || !url.startsWith("http")) {
+    setStatus("❌ Введите корректную ссылку на модель", "error");
+    modelUrlInput.focus();
+    return;
+  }
+
   startBtn.disabled = true;
-  status.textContent = "⏳ Загружаю модель…";
+  setStatus("⏳ Загружаю модель…");
 
   try {
-    model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+    model = await tmImage.load(url + "model.json", url + "metadata.json");
 
-    const flip = true; // зеркало — удобнее для пользователя
+    const flip = true;
     webcam = new tmImage.Webcam(400, 300, flip);
-    await webcam.setup();       // запрос доступа к камере
+    await webcam.setup();
     await webcam.play();
 
     const container = $("webcam-container");
     container.innerHTML = "";
     container.appendChild(webcam.canvas);
 
-    isRunning = true;
+    running = true;
     startBtn.textContent = "⏹ Остановить камеру";
-    startBtn.classList.replace("btn-primary", "btn-danger");
-    startBtn.disabled = false;
-    playBtn.disabled = false;
-    status.textContent = "✅ Модель загружена. Камера работает.";
+    startBtn.className   = "btn-danger";
+    startBtn.disabled    = false;
+    playBtn.disabled     = false;
+    modelUrlInput.disabled = true;
 
-    loop();
-  } catch (e) {
-    console.error(e);
-    status.textContent = "❌ Ошибка: " + e.message;
+    setStatus("✅ Модель загружена. Можно играть!");
+    predict();
+  } catch (err) {
+    console.error(err);
+    model = null;
     startBtn.disabled = false;
 
-    /* --- ДЕМО-РЕЖИМ (если модель не загружена) --- */
-    if (String(e).includes("Failed to fetch") || String(e).includes("404")) {
-      status.innerHTML = "⚠️ Модель недоступна — включён <b>демо-режим</b> (случайный выбор).";
-      startBtn.textContent = "🎲 Играть в демо-режиме";
-      startBtn.classList.replace("btn-primary", "btn-danger");
-      playBtn.disabled = false;
+    if (String(err).includes("404") || String(err).includes("Failed to fetch")) {
+      setStatus("❌ Модель не найдена. Проверьте ссылку.");
+    } else if (String(err).includes("NotAllowedError") || String(err).includes("Permission")) {
+      setStatus("❌ Нет доступа к камере. Разрешите доступ в браузере.");
+    } else {
+      setStatus("❌ Ошибка: " + err.message);
     }
   }
-});
+}
 
-startBtn.addEventListener("click", () => {
-  if (isRunning) stopCamera();
-});
-
+/* ── Остановка ── */
 function stopCamera() {
-  if (webcam) webcam.stop();
-  isRunning = false;
-  if (predictionInterval) clearInterval(predictionInterval);
-  startBtn.textContent = "▶️ Запустить камеру";
-  startBtn.classList.replace("btn-danger", "btn-primary");
-  playBtn.disabled = true;
-  status.textContent = "⏹ Камера остановлена.";
+  running = false;
+  if (loopId) { clearTimeout(loopId); loopId = null; }
+  if (webcam)  { webcam.stop(); webcam = null; }
+  model = null;
 
-  const container = $("webcam-container");
-  container.innerHTML = '<div class="placeholder">Камера выключена</div>';
-  list.innerHTML = "";
+  $("webcam-container").innerHTML =
+    '<div class="placeholder">Камера выключена</div>';
+  listEl.innerHTML =
+    '<li style="color:#7f8c8d;font-size:.85rem;padding:8px;background:none;">Предсказания появятся после запуска</li>';
+
+  startBtn.textContent  = "▶️ Запустить камеру";
+  startBtn.className    = "btn-primary";
+  playBtn.disabled      = true;
+  modelUrlInput.disabled = false;
+  setStatus("⏹ Камера остановлена.");
 }
 
-/* ---------- Цикл распознавания ---------- */
-async function loop() {
-  webcam.update();
-  if (isRunning) {
-    await predict();
-    predictionInterval = setTimeout(loop, 250); // ~4 раза/сек
-  }
-}
-
+/* ── Петля распознавания ── */
 async function predict() {
-  if (!model) return;
+  if (!running || !model || !webcam) return;
+  webcam.update();
   const preds = await model.predict(webcam.canvas);
-  showPredictions(preds);
+  renderPredictions(preds);
+  loopId = setTimeout(predict, 250);
 }
 
-/* ---------- Отрисовка предсказаний ---------- */
-function showPredictions(preds) {
-  list.innerHTML = "";
-  preds
-    .slice()                     // копия, чтобы не мутировать
-    .sort((a, b) => b.probability - a.probability)
-    .forEach(p => {
-      const pct = (p.probability * 100).toFixed(1);
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <span>${EMOJI[p.className] || "🤖"} ${p.className}</span>
+/* ── Отрисовка предсказаний ── */
+function renderPredictions(preds) {
+  const sorted = [...preds].sort((a, b) => b.probability - a.probability);
+  listEl.innerHTML = "";
+  sorted.forEach(p => {
+    const pct  = (p.probability * 100).toFixed(1);
+    const info = CLASS_MAP[p.className];
+    const name = info ? `${info.emoji} ${p.className}` : `🤖 ${p.className}`;
+    const li   = document.createElement("li");
+    li.innerHTML = `
+      <div class="pred-row">
+        <span>${name}</span>
         <span>${pct}%</span>
-      `;
-      li.querySelector ? null : null;
-      const bar = document.createElement("div");
-      bar.className = "bar";
-      bar.style.width = pct + "%";
-      li.appendChild(bar);
-      list.appendChild(li);
-    });
+      </div>
+      <div class="bar" style="width:${pct}%"></div>`;
+    listEl.appendChild(li);
+  });
 }
 
-/* ============================================================
-   🎮 ЛОГИКА ИГРЫ
-   ============================================================ */
-const score = { you: 0, comp: 0, draw: 0 };
-
-playBtn.addEventListener("click", playRound);
-
+/* ── Раунд игры ── */
 async function playRound() {
+  if (!running || !model || !webcam) return;
   playBtn.disabled = true;
 
-  let playerChoice = null;
+  const preds    = await model.predict(webcam.canvas);
+  const best     = preds.reduce((a, b) => a.probability > b.probability ? a : b);
+  const threshold = Number(thresholdEl.value) / 100;
 
-  if (model && webcam) {
-    // Берём самое уверенное предсказание
-    const preds = await model.predict(webcam.canvas);
-    const best = preds.reduce((a, b) => a.probability > b.probability ? a : b);
-
-    if (best.probability < 0.7) {
-      $("result").textContent = "🤔 Не уверен — покажите жест чётче!";
-      $("result").className = "result";
-      playBtn.disabled = false;
-      return;
-    }
-    playerChoice = best.className;
-  } else {
-    // Демо-режим
-    playerChoice = CLASSES[Math.floor(Math.random() * CLASSES.length)];
+  if (best.probability < threshold) {
+    $("result").textContent = "🤔 Не уверен — покажите жест чётче!";
+    $("result").className   = "result";
+    playBtn.disabled = false;
+    return;
   }
 
-  const computerChoice = CLASSES[Math.floor(Math.random() * CLASSES.length)];
+  const playerClass = best.className;
+  if (!CLASS_MAP[playerClass]) {
+    $("result").textContent = `⚠️ Класс «${playerClass}» не найден в CLASS_MAP`;
+    $("result").className   = "result";
+    playBtn.disabled = false;
+    return;
+  }
 
-  // Анимация выбора компьютера
-  await animateComputerChoice();
+  const compClass = GAME_CLASSES[Math.floor(Math.random() * GAME_CLASSES.length)];
+  await animateComputer();
 
-  // Отрисовка выбора игрока
-  $("playerEmoji").textContent    = EMOJI[playerChoice];
-  $("playerChoice").textContent   = playerChoice;
-  $("computerEmoji").textContent  = EMOJI[computerChoice];
-  $("computerChoice").textContent = computerChoice;
-  $("playerEmoji").classList.add("big");
-  setTimeout(() => $("playerEmoji").classList.remove("big"), 400);
+  const pi = CLASS_MAP[playerClass];
+  const ci = CLASS_MAP[compClass];
 
-  // Определяем победителя
-  const outcome = decide(playerChoice, computerChoice);
-  const r = $("result");
-  if (outcome === "win")  { r.textContent = "🎉 Победа!";  r.className = "result win";  score.you++; }
-  if (outcome === "lose") { r.textContent = "😞 Проигрыш"; r.className = "result lose"; score.comp++; }
-  if (outcome === "draw") { r.textContent = "🤝 Ничья";   r.className = "result draw"; score.draw++; }
+  $("playerEmoji").textContent    = pi.emoji;
+  $("playerChoice").textContent   = pi.label;
+  $("computerEmoji").textContent  = ci.emoji;
+  $("computerChoice").textContent = ci.label;
+  pop($("playerEmoji"));
 
+  const outcome = getOutcome(playerClass, compClass);
+  const rEl = $("result");
+  if (outcome === "win")  { rEl.textContent = "🎉 Победа!";  rEl.className = "result win";  score.you++; }
+  if (outcome === "lose") { rEl.textContent = "😞 Проигрыш"; rEl.className = "result lose"; score.comp++; }
+  if (outcome === "draw") { rEl.textContent = "🤝 Ничья";   rEl.className = "result draw"; score.draw++; }
   updateScore();
   playBtn.disabled = false;
 }
 
-function decide(p, c) {
-  if (p === c) return "draw";
-  if (
-    (p === "Камень"  && c === "Ножницы") ||
-    (p === "Ножницы" && c === "Бумага")  ||
-    (p === "Бумага"  && c === "Камень")
-  ) return "win";
-  return "lose";
+/* ── Логика победы ── */
+function getOutcome(player, computer) {
+  if (player === computer) return "draw";
+  return BEATS[player] === computer ? "win" : "lose";
 }
 
+/* ── Анимация компьютера ── */
+async function animateComputer() {
+  const el = $("computerEmoji");
+  const frames = Object.values(CLASS_MAP).map(v => v.emoji);
+  for (let i = 0; i < 9; i++) {
+    el.textContent = frames[i % frames.length];
+    await new Promise(r => setTimeout(r, 75));
+  }
+}
+
+function pop(el) {
+  el.classList.add("pop");
+  setTimeout(() => el.classList.remove("pop"), 350);
+}
+
+/* ── Счёт ── */
+const score = { you: 0, comp: 0, draw: 0 };
 function updateScore() {
   $("scoreYou").textContent  = score.you;
   $("scoreComp").textContent = score.comp;
   $("scoreDraw").textContent = score.draw;
 }
 
-async function animateComputerChoice() {
-  const emojis = ["✊", "✌️", "✋"];
-  const el = $("computerEmoji");
-  for (let i = 0; i < 8; i++) {
-    el.textContent = emojis[i % 3];
-    await new Promise(r => setTimeout(r, 80));
-  }
+function setStatus(msg) {
+  statusEl.textContent = msg;
 }
 </script>
 </body>
